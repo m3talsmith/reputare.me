@@ -50,7 +50,8 @@ describe 'User Posts' do
   context 'list all post' do
     
     before do
-      @post = Factory.create :published_post, user: @user
+      @post       = Factory.create :published_post, user: @user
+      @draft_post = Factory.create :draft_post, user: @user
       visit dashboard_path
       click_link 'view my posts'
     end
@@ -72,8 +73,37 @@ describe 'User Posts' do
     end
     
     it 'shows publish status' do
-      within('.post') do
+      within('.post.published') do
         page.should have_content('Published')
+      end
+    end
+    
+    it 'shows links on post draft to publish' do
+      all('.post.published').count.should == 1
+      within('.post.draft') do
+        click_link 'publish'
+      end
+      @draft_post.reload
+      @draft_post.published.should be
+      all('.post.published').count.should == 2
+    end
+
+    context 'editing a post' do
+
+      before do
+        within('.draft') do
+          click_link 'edit'
+        end
+      end
+    
+      it 'publishes post from drop down' do
+        select 'Published', from: 'Published'
+        click_button 'save'
+        
+        @draft_post.reload
+        @draft_post.published.should be
+        page.should have_content('Post updated')
+        current_path.should == user_post_path(@user, @draft_post)
       end
     end
   end
